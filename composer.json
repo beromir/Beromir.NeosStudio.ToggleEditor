@@ -1,0 +1,32 @@
+{
+    "name": "beromir/neos-studio-toggle-editor",
+    "type": "neos-plugin",
+    "description": "The toggle editor for Neos Studio: select one or multiple of a set of configured values, rendered as a button group, radio/checkbox list or color swatches. Registers as Beromir.ToggleEditor/Editor.",
+    "license": "GPL-3.0-or-later",
+    "keywords": [
+        "neos",
+        "neoscms",
+        "flow",
+        "editor",
+        "neos-studio"
+    ],
+    "authors": [
+        {
+            "name": "Henrik Reißig",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "neos/neos": "^9.1",
+        "medienreaktor/neos-studio": "^1.0"
+    },
+    "extra": {
+        "neos": {
+            "package-key": "Beromir.NeosStudio.ToggleEditor"
+        },
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        }
+    }
+}
