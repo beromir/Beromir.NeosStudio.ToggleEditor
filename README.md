@@ -149,15 +149,32 @@ properties:
 
 ## Limitations
 
-- **Data sources are not supported.** The Studio plugin API exposes no access
-  to the authenticated backend API, so `dataSourceIdentifier`,
-  `dataSourceUri`, `dataSourceAdditionalData` and `dataSourceDisableCaching`
-  render a hint instead of options. Configure static `editorOptions.values`.
-- **No i18n.** Labels and descriptions are rendered as configured;
-  `Vendor:Source:id`-style translation ids are shown verbatim.
+- **`dataSourceUri` is not supported** - a free-form URL bypassing the data
+  source registry, same as Studio's own `DataSourceWidget`. Register a data
+  source and reference it via `dataSourceIdentifier` instead, which works.
 - **ClientEval expressions** in editor options are not evaluated; a
   `ClientEval:` string in `hidden` / `disabled` is treated as false instead of
   misinterpreted as true.
+
+`dataSourceIdentifier` and i18n (`label: i18n` / `description: i18n`) are
+supported:
+
+- Values are loaded via the plugin API's `apiFetch` against the same
+  `/data-sources/{id}` endpoint the shell's own select-box views use -
+  `dataSourceAdditionalData` and `dataSourceDisableCaching` are forwarded.
+  Both response shapes Neos data sources return (an array of `{value,
+  label, ...}` entries, or a map of `{key: {label, ...}}`) are handled.
+- Translation ids are resolved via the same XLIFF-as-JSON endpoint the
+  shell itself loads (`window.__NEOS_STUDIO__.xliffEndpoint` - a stable
+  runtime global, not (yet) part of the published plugin API, but set
+  before any plugin script runs). The package's own UI strings (loading /
+  reset / error messages) reuse `beromir/neos-toggle-editor`'s existing
+  translations when that package is installed, falling back to English
+  literals otherwise.
+- Colors set as CSS custom properties (`color: "var(--x)"`, common for
+  project design tokens) are resolved live from the preview iframe's
+  document, since the Studio shell's own document never loads the site's
+  CSS and a plain `var(...)` there would resolve to nothing.
 
 ## Building
 

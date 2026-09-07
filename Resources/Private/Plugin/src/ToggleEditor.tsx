@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { PropertyEditorProps } from '@medienreaktor/neos-studio'
 import { Icons, PreviewImage } from './components'
+import { resolveColor, useCssVarsReady } from './cssVars'
+import { useToggleDataSource } from './dataSource'
+import { translate, useI18nReady } from './i18n'
 import {
   computeColumns,
   cx,
@@ -21,10 +24,10 @@ import {
  *  - the host renders the property label, so there is no label/Wrapper here
  *  - no unsaved-change highlighting (the classic `highlight` prop has no
  *    Studio equivalent - the inspector auto-saves on commit anyway)
- *  - data sources (dataSourceIdentifier / dataSourceUri) are not available
- *    to plugins; a configured one renders a hint instead of options
- *  - labels/descriptions are rendered as configured; i18n ids are not
- *    resolved (the plugin API exposes no translation service)
+ *  - `dataSourceUri` isn't supported (same as Studio's own DataSourceWidget);
+ *    `dataSourceIdentifier` works (see ./dataSource)
+ *  - i18n ids and `var(--x)` colors are resolved at render time (see ./i18n,
+ *    ./cssVars) rather than by the plugin API itself
  */
 
 const LAYOUTS = ['grid', 'flex', 'flex-start', 'list', 'color']
@@ -37,6 +40,7 @@ export function ToggleEditor({
   autoFocus,
   invalid,
   subject,
+  nodeAddress,
 }: PropertyEditorProps) {
   const layout =
     typeof rawOptions.layout === 'string' && LAYOUTS.includes(rawOptions.layout)
@@ -53,12 +57,15 @@ export function ToggleEditor({
   const editorDisabled =
     truthyOption(rawOptions.disabled) || truthyOption(rawOptions.disable)
   const editorHidden = truthyOption(rawOptions.hidden)
-  const hasDataSource = Boolean(
-    rawOptions.dataSourceIdentifier || rawOptions.dataSourceUri,
-  )
+  const dataSourceIdentifier =
+    typeof rawOptions.dataSourceIdentifier === 'string' ? rawOptions.dataSourceIdentifier : null
+  const dataSourceUnsupported = !dataSourceIdentifier && Boolean(rawOptions.dataSourceUri)
   const wrapperCustomStyle = styleOption(rawOptions.wrapperCustomStyle)
   const buttonCustomStyle = styleOption(rawOptions.buttonCustomStyle)
   const labelCustomStyle = styleOption(rawOptions.labelCustomStyle)
+
+  useI18nReady()
+  useCssVarsReady()
 
   // The picked value(s), always held as an array; seeded from the stored
   // value (the host remounts on a subject change, which resets this).
@@ -66,10 +73,24 @@ export function ToggleEditor({
     Array.isArray(value) ? value : value === undefined || value === null ? [] : [value],
   )
 
-  const items = useMemo(
-    () => sortByPosition(flattenValues(rawOptions.values, layout)),
+  const dataSource = useToggleDataSource(
+    dataSourceIdentifier,
+    nodeAddress,
+    typeof rawOptions.dataSourceAdditionalData === 'object' &&
+      rawOptions.dataSourceAdditionalData !== null &&
+      !Array.isArray(rawOptions.dataSourceAdditionalData)
+      ? (rawOptions.dataSourceAdditionalData as Record<string, unknown>)
+      : undefined,
+    truthyOption(rawOptions.dataSourceDisableCaching),
+  )
+
+  const staticItems = useMemo(
+    () => flattenValues(rawOptions.values, layout),
     [rawOptions.values, layout],
   )
+  const items = sortByPosition(dataSourceIdentifier ? (dataSource.items ?? []) : staticItems)
+  // Reuses beromir/neos-toggle-editor's own translations when installed.
+  const resetLabel = translate('Beromir.ToggleEditor:Main:reset') ?? 'Reset'
 
   const firstButton = useRef<HTMLButtonElement | null>(null)
   useEffect(() => {
@@ -89,20 +110,36 @@ export function ToggleEditor({
     return null
   }
 
-  if (hasDataSource) {
+  if (dataSourceUnsupported) {
     return (
       <div className="btse-notice">
-        Data sources are not supported by the Studio port of the toggle editor
-        - configure editorOptions.values instead.
+        dataSourceUri is not supported in Neos Studio - register a data
+        source and reference it via dataSourceIdentifier instead.
       </div>
     )
+  }
+
+  if (dataSourceIdentifier && dataSource.isLoading) {
+    return (
+      <div className="btse-notice">
+        <i className="fas fa-circle-notch fa-spin" aria-hidden />{' '}
+        {translate('Beromir.ToggleEditor:Main:loading') ?? 'Loading…'}
+      </div>
+    )
+  }
+
+  if (dataSourceIdentifier && dataSource.error) {
+    return <div className="btse-notice btse-notice--error">{dataSource.error}</div>
   }
 
   if (!items.length) {
     return (
       <div className="btse-notice btse-notice--error">
-        No values defined for the toggle editor. Configure
-        editorOptions.values in the node type definition.
+        {dataSourceIdentifier
+          ? (translate('Beromir.ToggleEditor:Main:error.noDataFromSource') ??
+            'No data was returned from the source.')
+          : (translate('Beromir.ToggleEditor:Main:error.noNodeTypeDefintion') ??
+            'No values defined for the toggle editor. Configure editorOptions.values in the node type definition.')}
       </div>
     )
   }
@@ -176,17 +213,19 @@ export function ToggleEditor({
         const itemDisabled = editorDisabled || truthyOption(item.disabled)
         const state = isCurrent ? 'active' : 'default'
 
-        const label = (state === 'active' ? (item.labelActive ?? item.label) : item.label) as
-          | string
-          | undefined
-        const description = (
-          state === 'active'
+        const label = translate(
+          (state === 'active' ? (item.labelActive ?? item.label) : item.label) as
+            | string
+            | undefined,
+        )
+        const description = translate(
+          (state === 'active'
             ? (item.descriptionActive ?? item.description)
-            : item.description
-        ) as string | undefined
+            : item.description) as string | undefined,
+        )
 
         const title = description || label
-        const ariaLabel = isCurrent && allowEmpty ? 'Reset' : title
+        const ariaLabel = isCurrent && allowEmpty ? resetLabel : title
         const buttonRef = index === 0 ? firstButton : undefined
 
         switch (layout) {
@@ -283,7 +322,7 @@ export function ToggleEditor({
                         maxColorIndex === colorIndex &&
                           'btse-color-preview--last',
                       )}
-                      style={{ backgroundColor: color }}
+                      style={{ backgroundColor: resolveColor(color) }}
                     />
                   ))}
                   {resetBadge(item)}

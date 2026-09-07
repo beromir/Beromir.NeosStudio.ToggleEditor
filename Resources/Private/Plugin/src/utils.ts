@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { translate } from './i18n'
 
 /**
  * Ported from Beromir.ToggleEditor's utils.js. An item is one entry of
@@ -164,13 +165,13 @@ function getIconOrPreviewConfig(
       'Rotate',
     ),
     label: getItemVariants<string | undefined>(item, 'label', true, (v) =>
-      typeof v === 'string' ? v : undefined,
+      typeof v === 'string' ? translate(v) : undefined,
     ),
     description: getItemVariants<string | undefined>(
       item,
       'description',
       true,
-      (v) => (typeof v === 'string' ? v : undefined),
+      (v) => (typeof v === 'string' ? translate(v) : undefined),
     ),
   }
 }
