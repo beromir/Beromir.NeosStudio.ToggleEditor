@@ -10,6 +10,11 @@ package provides the same editor for the classic Neos UI under the same id;
 both can be installed side by side, so one node type configuration serves
 both interfaces.
 
+It runs in Neos Studio 1 and 2. Studio 2 hands plugins a different node address
+and answers from Neos.Api 2 instead of Medienreaktor.NeosApi 1.x; the editor asks
+the plugin API which version it runs in (`src/studio.ts`) and takes the routes that
+come with it.
+
 ## Layouts
 
 - **grid** (default): buttons in a grid; `columns` / `maximalColumns` control
@@ -159,9 +164,12 @@ properties:
 `dataSourceIdentifier` and i18n (`label: i18n` / `description: i18n`) are
 supported:
 
-- Values are loaded via the plugin API's `apiFetch` against the same
-  `/data-sources/{id}` endpoint the shell's own select-box views use -
-  `dataSourceAdditionalData` and `dataSourceDisableCaching` are forwarded.
+- Values are loaded via the plugin API's `apiFetch` against the endpoint the
+  shell's own select-box views use - `/datasources/{id}` of Neos.Api in Studio
+  2, `/data-sources/{id}` in Studio 1 - `dataSourceAdditionalData` and
+  `dataSourceDisableCaching` are forwarded. Neos.Api takes a data source's
+  arguments as an object only, so in Studio 2 `dataSourceAdditionalData` has
+  to be a map, not a list.
   Both response shapes Neos data sources return (an array of `{value,
   label, ...}` entries, or a map of `{key: {label, ...}}`) are handled.
 - Translation ids are resolved via the same XLIFF-as-JSON endpoint the
@@ -189,11 +197,10 @@ npm run build        # emits Resources/Public/Plugin/{plugin.js,plugin.css}
 Then flush Flow caches and reload `/neos/studio`. Use `npm run dev` to rebuild
 on change while developing.
 
-Note: `@medienreaktor/neos-studio` (type declarations of the Studio plugin
-API) is a `file:` dependency pointing at the installed
-`Medienreaktor.NeosStudio` package under `Packages/Application/`. If your
-Studio package lives elsewhere, adjust the path in
-`Resources/Private/Plugin/package.json`.
+The type declarations of the Studio plugin API come from npm
+(`@medienreaktor/neos-studio`, published with every Studio release), so the
+plugin builds without an installed Studio. They are version 2's; the Studio 1
+paths are typed loosely.
 
 ## License
 
