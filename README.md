@@ -20,6 +20,13 @@ both interfaces.
 - **color**: color swatches (one or several colors per swatch, `transparent`
   renders a checkerboard) with the label below
 
+## Compatibility
+
+| This package | Neos Studio | Neos   | PHP    |
+| ------------ | ----------- | ------ | ------ |
+| 2.x          | 2.x         | ^9.2   | ^8.4   |
+| 1.x          | 1.x         | ^9.1   | ^8.2   |
+
 ## Installation
 
 Run the following command in your site package:
@@ -159,9 +166,11 @@ properties:
 `dataSourceIdentifier` and i18n (`label: i18n` / `description: i18n`) are
 supported:
 
-- Values are loaded via the plugin API's `apiFetch` against the same
-  `/data-sources/{id}` endpoint the shell's own select-box views use -
-  `dataSourceAdditionalData` and `dataSourceDisableCaching` are forwarded.
+- Values are loaded via the plugin API's `apiFetch` from Neos.Api's
+  `/api/datasources/{id}` operation, the same one the shell's own select-box
+  views use (the `datasources.read` scope) - the edited node, and
+  `dataSourceAdditionalData` as the data source's arguments, are forwarded;
+  `dataSourceDisableCaching` refetches on every change.
   Both response shapes Neos data sources return (an array of `{value,
   label, ...}` entries, or a map of `{key: {label, ...}}`) are handled.
 - Translation ids are resolved via the same XLIFF-as-JSON endpoint the
@@ -190,8 +199,8 @@ Then flush Flow caches and reload `/neos/studio`. Use `npm run dev` to rebuild
 on change while developing.
 
 Note: `@medienreaktor/neos-studio` (type declarations of the Studio plugin
-API) is a `file:` dependency pointing at the installed
-`Medienreaktor.NeosStudio` package under `Packages/Application/`. If your
+API) is a `file:` dependency pointing at `Resources/Public/Studio/types` of
+the installed `Medienreaktor.NeosStudio` package under `Packages/Application/`. If your
 Studio package lives elsewhere, adjust the path in
 `Resources/Private/Plugin/package.json`.
 

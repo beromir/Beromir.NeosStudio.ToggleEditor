@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { apiFetch } from '@medienreaktor/neos-studio'
+import { apiFetch, type NodeAddress } from '@medienreaktor/neos-studio'
 import type { ToggleItem } from './utils'
 
 /**
  * `editorOptions.dataSourceIdentifier` loads values from a Neos data source
- * via the plugin API's `apiFetch`, against the same `/data-sources/{id}`
- * endpoint Studio's own select-box views use. No react-query - a second
+ * via the plugin API's `apiFetch`, against Neos.Api's `/datasources/{id}`
+ * operation (getDataSourceData) Studio's own select-box views use. No react-query - a second
  * bundled copy wouldn't see the shell's QueryClientProvider - so this is a
  * plain fetch-on-change effect instead.
  */
@@ -51,7 +51,7 @@ function normalize(data: unknown): ToggleItem[] {
 
 export function useToggleDataSource(
   identifier: string | null,
-  nodeAddress: string | undefined,
+  nodeAddress: NodeAddress | undefined,
   additionalData: Record<string, unknown> | undefined,
   disableCaching: boolean,
 ): DataSourceState {
@@ -71,13 +71,16 @@ export function useToggleDataSource(
     setState((previous) => ({ ...previous, isLoading: true, error: null }))
 
     const search = new URLSearchParams()
-    if (nodeAddress) search.set('node', nodeAddress)
-    for (const [key, value] of Object.entries(additionalData ?? {})) {
-      appendParam(search, key, value)
+    appendParam(search, 'arguments', additionalData)
+    if (nodeAddress) {
+      search.set('contentRepositoryId', nodeAddress.contentRepositoryId)
+      search.set('nodeAggregateId', nodeAddress.nodeAggregateId)
+      search.set('workspaceName', nodeAddress.workspaceName)
+      search.set('dimensionSpacePoint', nodeAddress.dimensionSpacePoint)
     }
     const query = search.toString()
 
-    apiFetch<{ data: unknown }>(`/data-sources/${encodeURIComponent(identifier)}${query ? `?${query}` : ''}`)
+    apiFetch<{ data: unknown }>(`/datasources/${encodeURIComponent(identifier)}${query ? `?${query}` : ''}`)
       .then((response) => {
         if (cancelled) return
         setState({ isLoading: false, error: null, items: normalize(response.data) })
@@ -94,7 +97,15 @@ export function useToggleDataSource(
     return () => {
       cancelled = true
     }
-  }, [identifier, nodeAddress, JSON.stringify(additionalData ?? {}), disableCaching])
+  }, [
+    identifier,
+    nodeAddress?.contentRepositoryId,
+    nodeAddress?.nodeAggregateId,
+    nodeAddress?.workspaceName,
+    nodeAddress?.dimensionSpacePoint,
+    JSON.stringify(additionalData ?? {}),
+    disableCaching,
+  ])
 
   return state
 }

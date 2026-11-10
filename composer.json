@@ -17,16 +17,16 @@
         }
     ],
     "require": {
-        "php": "^8.2",
-        "neos/neos": "^9.1",
-        "medienreaktor/neos-studio": "^1.0"
+        "php": "^8.4",
+        "neos/neos": "^9.2",
+        "medienreaktor/neos-studio": "^2.0"
     },
     "extra": {
         "neos": {
             "package-key": "Beromir.NeosStudio.ToggleEditor"
         },
         "branch-alias": {
-            "dev-main": "1.0.x-dev"
+            "dev-main": "2.0.x-dev"
         }
     }
 }
