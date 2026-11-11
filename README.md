@@ -198,11 +198,9 @@ npm run build        # emits Resources/Public/Plugin/{plugin.js,plugin.css}
 Then flush Flow caches and reload `/neos/studio`. Use `npm run dev` to rebuild
 on change while developing.
 
-Note: `@medienreaktor/neos-studio` (type declarations of the Studio plugin
-API) is a `file:` dependency pointing at `Resources/Public/Studio/types` of
-the installed `Medienreaktor.NeosStudio` package under `Packages/Application/`. If your
-Studio package lives elsewhere, adjust the path in
-`Resources/Private/Plugin/package.json`.
+The type declarations of the Studio plugin API come from npm
+(`@medienreaktor/neos-studio`, published with every Studio release), so the
+plugin builds anywhere, without an installed Studio.
 
 ## License
 
